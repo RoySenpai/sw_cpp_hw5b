@@ -15,11 +15,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
 #include <cstdlib>
 #include <memory>
 #include <algorithm>
-#include <stdexcept>
 #include "MagicalContainer.hpp"
 
 using namespace std;
