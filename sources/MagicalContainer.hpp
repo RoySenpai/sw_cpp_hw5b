@@ -79,8 +79,9 @@ namespace ariel
 			/*
 			 * @brief Add an element to the container.
 			 * @param element The element to add.
-			 * @note The element is added to the end of the container.
 			 * @note If the element already exists in the container, it will not be added.
+			 * @note The element is added to the container's elements in ascending order.
+			 * @note Time complexity: O(n).
 			*/
 			void addElement(int element);
 
@@ -88,12 +89,14 @@ namespace ariel
 			 * @brief Remove an element from the container.
 			 * @param element The element to remove.
 			 * @throw std::runtime_error If the element does not exist in the container.
+			 * @note Time complexity: O(n).
 			*/
 			void removeElement(int element);
 
 			/*
 			 * @brief Return the size of the container.
 			 * @return The size of the container.
+			 * @note Time complexity: O(1).
 			*/
 			size_t size() const {
 				return _elements.size();
@@ -158,19 +161,7 @@ namespace ariel
 				 * @param other The iterator to copy.
 				 * @return A reference to this iterator.
 				*/
-				AscendingIterator &operator=(const AscendingIterator &other) {
-					if (this != &other)
-					{
-						if (&_container != &other._container)
-						{
-							throw std::runtime_error("Cannot assign iterators from different containers");
-						}
-
-						_index = other._index;
-					}
-
-					return *this;
-				}
+				AscendingIterator &operator=(const AscendingIterator &other);
 
 				/*
 				 * @brief Move assignment operator.
@@ -187,21 +178,7 @@ namespace ariel
 				 * @return True if the iterators are equal, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator==(const IIterator &other) const override {
-					const AscendingIterator *other_ptr = dynamic_cast<const AscendingIterator *>(&other);
-
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
-
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index == other_ptr->_index;
-				}
+				bool operator==(const IIterator &other) const override;
 
 				/*
 				 * @brief Inequality operator, checks if two iterators are not equal by comparing their index.
@@ -209,21 +186,7 @@ namespace ariel
 				 * @return True if the iterators are not equal, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator!=(const IIterator &other) const override {
-					const AscendingIterator *other_ptr = dynamic_cast<const AscendingIterator *>(&other);
-
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
-
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index != other_ptr->_index;
-				}
+				bool operator!=(const IIterator &other) const override;
 
 				/*
 				 * @brief Less than operator, checks if this iterator is less than the other iterator by comparing their index.
@@ -231,21 +194,7 @@ namespace ariel
 				 * @return True if this iterator is less than the other iterator, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator<(const IIterator &other) const override {
-					const AscendingIterator *other_ptr = dynamic_cast<const AscendingIterator *>(&other);
-
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
-
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index < other_ptr->_index;
-				}
+				bool operator<(const IIterator &other) const override;
 
 				/*
 				 * @brief Greater than operator, checks if this iterator is greater than the other iterator by comparing their index.
@@ -253,49 +202,49 @@ namespace ariel
 				 * @return True if this iterator is greater than the other iterator, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator>(const IIterator &other) const override {
-					const AscendingIterator *other_ptr = dynamic_cast<const AscendingIterator *>(&other);
+				bool operator>(const IIterator &other) const override;
 
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
+				/*
+				 * @brief Equality operator, checks if two iterators are equal by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if the iterators are equal, false otherwise.
+				 * @throw std::runtime_error If the iterators are from different containers.
+				*/
+				bool operator==(const AscendingIterator &other) const;
 
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
+				/*
+				 * @brief Inequality operator, checks if two iterators are not equal by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if the iterators are not equal, false otherwise.
+				*/
+				bool operator!=(const AscendingIterator &other) const;
 
-					return _index > other_ptr->_index;
-				}
+				/*
+				 * @brief Less than operator, checks if this iterator is less than the other iterator by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if this iterator is less than the other iterator, false otherwise.
+				*/
+				bool operator<(const AscendingIterator &other) const;
+
+				/*
+				 * @brief Greater than operator, checks if this iterator is greater than the other iterator by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if this iterator is greater than the other iterator, false otherwise.
+				*/
+				bool operator>(const AscendingIterator &other) const;
 
 				/*
 				 * @brief Dereference operator, returns the element at the current index.
 				 * @return The element at the current index (If the index is out of bounds, the behavior is undefined).
 				*/
-				int operator*() const {
-					if (_index > _container._elements_ascending_order.size())
-					{
-						throw std::out_of_range("Iterator out of range");
-					}
-
-					return *(_container._elements_ascending_order.at(_index));
-				}
+				int operator*() const;
 
 				/*
 				 * @brief Prefix increment operator, increments the iterator to the next element.
 				 * @return A reference to this iterator.
 				 * @throw std::runtime_error If the iterator is out of range.
 				*/
-				AscendingIterator &operator++() {
-					if (_index >= _container._elements_ascending_order.size())
-					{
-						throw std::runtime_error("Iterator out of range");
-					}
-					
-					++_index;
-					return *this;
-				}
+				AscendingIterator &operator++();
 
 				/*
 				 * @brief Returns an iterator to the first element in the container.
@@ -313,63 +262,6 @@ namespace ariel
 				*/
 				AscendingIterator end() const {
 					return AscendingIterator(_container, _container._elements_ascending_order.size());
-				}
-
-				/*
-				 * @brief Equality operator, checks if two iterators are equal by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if the iterators are equal, false otherwise.
-				 * @throw std::runtime_error If the iterators are from different containers.
-				*/
-				bool operator==(const AscendingIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index == other._index;
-				}
-
-				/*
-				 * @brief Inequality operator, checks if two iterators are not equal by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if the iterators are not equal, false otherwise.
-				*/
-				bool operator!=(const AscendingIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index != other._index;
-				}
-
-				/*
-				 * @brief Less than operator, checks if this iterator is less than the other iterator by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if this iterator is less than the other iterator, false otherwise.
-				*/
-				bool operator<(const AscendingIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index < other._index;
-				}
-
-				/*
-				 * @brief Greater than operator, checks if this iterator is greater than the other iterator by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if this iterator is greater than the other iterator, false otherwise.
-				*/
-				bool operator>(const AscendingIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index > other._index;
 				}
 		};
 
@@ -432,19 +324,7 @@ namespace ariel
 				 * @param other The iterator to copy.
 				 * @return A reference to this iterator.
 				*/
-				SideCrossIterator &operator=(const SideCrossIterator &other) {
-					if (this != &other)
-					{
-						if (&_container != &other._container)
-						{
-							throw std::runtime_error("Cannot assign iterators from different containers");
-						}
-
-						_index = other._index;
-					}
-
-					return *this;
-				}
+				SideCrossIterator &operator=(const SideCrossIterator &other);
 
 				/*
 				 * @brief Move assignment operator.
@@ -461,21 +341,7 @@ namespace ariel
 				 * @return True if the iterators are equal, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator==(const IIterator &other) const override {
-					const SideCrossIterator *other_ptr = dynamic_cast<const SideCrossIterator *>(&other);
-
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
-
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index == other_ptr->_index;
-				}
+				bool operator==(const IIterator &other) const override;
 
 				/*
 				 * @brief Inequality operator, checks if two iterators are not equal by comparing their index.
@@ -483,21 +349,7 @@ namespace ariel
 				 * @return True if the iterators are not equal, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator!=(const IIterator &other) const override {
-					const SideCrossIterator *other_ptr = dynamic_cast<const SideCrossIterator *>(&other);
-
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
-
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index != other_ptr->_index;
-				}
+				bool operator!=(const IIterator &other) const override;
 
 				/*
 				 * @brief Less than operator, checks if this iterator is less than the other iterator by comparing their index.
@@ -505,21 +357,7 @@ namespace ariel
 				 * @return True if this iterator is less than the other iterator, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator<(const IIterator &other) const override {
-					const SideCrossIterator *other_ptr = dynamic_cast<const SideCrossIterator *>(&other);
-
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
-
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index < other_ptr->_index;
-				}
+				bool operator<(const IIterator &other) const override;
 
 				/*
 				 * @brief Greater than operator, checks if this iterator is greater than the other iterator by comparing their index.
@@ -527,49 +365,52 @@ namespace ariel
 				 * @return True if this iterator is greater than the other iterator, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator>(const IIterator &other) const override {
-					const SideCrossIterator *other_ptr = dynamic_cast<const SideCrossIterator *>(&other);
+				bool operator>(const IIterator &other) const override;
 
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
+				/*
+				 * @brief Equality operator, checks if two iterators are equal by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if the iterators are equal, false otherwise.
+				 * @throw std::runtime_error If the iterators are from different containers.
+				*/
+				bool operator==(const SideCrossIterator &other) const;
 
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
+				/*
+				 * @brief Inequality operator, checks if two iterators are not equal by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if the iterators are not equal, false otherwise.
+				 * @throw std::runtime_error If the iterators are from different containers.
+				*/
+				bool operator!=(const SideCrossIterator &other) const;
 
-					return _index > other_ptr->_index;
-				}
+				/*
+				 * @brief Less than operator, checks if this iterator is less than the other iterator by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if this iterator is less than the other iterator, false otherwise.
+				 * @throw std::runtime_error If the iterators are from different containers.
+				*/
+				bool operator<(const SideCrossIterator &other) const;
+
+				/*
+				 * @brief Greater than operator, checks if this iterator is greater than the other iterator by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if this iterator is greater than the other iterator, false otherwise.
+				 * @throw std::runtime_error If the iterators are from different containers.
+				*/
+				bool operator>(const SideCrossIterator &other) const;
 
 				/*
 				 * @brief Dereference operator, returns the element at the current index.
 				 * @return The element at the current index (If the index is out of bounds, the behavior is undefined).
 				*/
-				int operator*() const {
-					if (_index > _container._elements_ascending_order.size())
-					{
-						throw std::out_of_range("Iterator out of range");
-					}
-					
-					return *(_container._elements_sidecross_order.at(_index));
-				}
+				int operator*() const;
 
 				/*
 				 * @brief Prefix increment operator, increments the iterator to the next element.
 				 * @return A reference to this iterator.
 				 * @throw std::runtime_error If the iterator is out of range.
 				*/
-				SideCrossIterator &operator++() {
-					if (_index >= _container._elements_sidecross_order.size())
-					{
-						throw std::runtime_error("Iterator out of range");
-					}
-					
-					++_index;
-					return *this;
-				}
+				SideCrossIterator &operator++();
 
 				/*
 				 * @brief Returns an iterator to the first element in the container.
@@ -587,66 +428,6 @@ namespace ariel
 				*/
 				SideCrossIterator end() const {
 					return SideCrossIterator(_container, _container._elements_sidecross_order.size());
-				}
-
-				/*
-				 * @brief Equality operator, checks if two iterators are equal by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if the iterators are equal, false otherwise.
-				 * @throw std::runtime_error If the iterators are from different containers.
-				*/
-				bool operator==(const SideCrossIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index == other._index;
-				}
-
-				/*
-				 * @brief Inequality operator, checks if two iterators are not equal by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if the iterators are not equal, false otherwise.
-				 * @throw std::runtime_error If the iterators are from different containers.
-				*/
-				bool operator!=(const SideCrossIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index != other._index;
-				}
-
-				/*
-				 * @brief Less than operator, checks if this iterator is less than the other iterator by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if this iterator is less than the other iterator, false otherwise.
-				 * @throw std::runtime_error If the iterators are from different containers.
-				*/
-				bool operator<(const SideCrossIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index < other._index;
-				}
-
-				/*
-				 * @brief Greater than operator, checks if this iterator is greater than the other iterator by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if this iterator is greater than the other iterator, false otherwise.
-				 * @throw std::runtime_error If the iterators are from different containers.
-				*/
-				bool operator>(const SideCrossIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index > other._index;
 				}
 		};
 
@@ -709,19 +490,7 @@ namespace ariel
 				 * @param other The iterator to copy.
 				 * @return A reference to this iterator.
 				*/
-				PrimeIterator &operator=(const PrimeIterator &other) {
-					if (this != &other)
-					{
-						if (&_container != &other._container)
-						{
-							throw std::runtime_error("Cannot assign iterators from different containers");
-						} 
-
-						_index = other._index;
-					}
-
-					return *this;
-				}
+				PrimeIterator &operator=(const PrimeIterator &other);
 
 				/*
 				 * @brief Move assignment operator.
@@ -738,21 +507,7 @@ namespace ariel
 				 * @return True if the iterators are equal, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator==(const IIterator &other) const override {
-					const PrimeIterator *other_ptr = dynamic_cast<const PrimeIterator *>(&other);
-
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
-
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index == other_ptr->_index;
-				}
+				bool operator==(const IIterator &other) const override;
 
 				/*
 				 * @brief Inequality operator, checks if two iterators are not equal by comparing their index.
@@ -760,21 +515,7 @@ namespace ariel
 				 * @return True if the iterators are not equal, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator!=(const IIterator &other) const override {
-					const PrimeIterator *other_ptr = dynamic_cast<const PrimeIterator *>(&other);
-
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
-
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index != other_ptr->_index;
-				}
+				bool operator!=(const IIterator &other) const override;
 
 				/*
 				 * @brief Less than operator, checks if this iterator is less than the other iterator by comparing their index.
@@ -782,21 +523,7 @@ namespace ariel
 				 * @return True if this iterator is less than the other iterator, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator<(const IIterator &other) const override {
-					const PrimeIterator *other_ptr = dynamic_cast<const PrimeIterator *>(&other);
-
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
-
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index < other_ptr->_index;
-				}
+				bool operator<(const IIterator &other) const override;
 
 				/*
 				 * @brief Greater than operator, checks if this iterator is greater than the other iterator by comparing their index.
@@ -804,49 +531,52 @@ namespace ariel
 				 * @return True if this iterator is greater than the other iterator, false otherwise.
 				 * @throw std::runtime_error If the iterators are from different containers or different types.
 				*/
-				bool operator>(const IIterator &other) const override {
-					const PrimeIterator *other_ptr = dynamic_cast<const PrimeIterator *>(&other);
+				bool operator>(const IIterator &other) const override;
 
-					if (other_ptr == nullptr)
-					{
-						throw std::runtime_error("Cannot compare iterators of different types");
-					}
+				/*
+				 * @brief Equality operator, checks if two iterators are equal by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if the iterators are equal, false otherwise.
+				 * @throw std::runtime_error If the iterators are from different containers.
+				*/
+				bool operator==(const PrimeIterator &other) const;
 
-					if (&_container != &other_ptr->_container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
+				/*
+				 * @brief Inequality operator, checks if two iterators are not equal by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if the iterators are not equal, false otherwise.
+				 * @throw std::runtime_error If the iterators are from different containers.
+				*/
+				bool operator!=(const PrimeIterator &other) const;
 
-					return _index > other_ptr->_index;
-				}
+				/*
+				 * @brief Less than operator, checks if this iterator is less than the other iterator by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if this iterator is less than the other iterator, false otherwise.
+				 * @throw std::runtime_error If the iterators are from different containers.
+				*/
+				bool operator<(const PrimeIterator &other) const;
+
+				/*
+				 * @brief Greater than operator, checks if this iterator is greater than the other iterator by comparing their index.
+				 * @param other The iterator to compare to.
+				 * @return True if this iterator is greater than the other iterator, false otherwise.
+				 * @throw std::runtime_error If the iterators are from different containers.
+				*/
+				bool operator>(const PrimeIterator &other) const;
 
 				/*
 				 * @brief Dereference operator, returns the element at the current index.
 				 * @return The element at the current index (If the index is out of bounds, the behavior is undefined).
 				*/
-				int operator*() const {
-					if (_index > _container._elements_ascending_order.size())
-					{
-						throw std::out_of_range("Iterator out of range");
-					}
-
-					return *(_container._elements_prime_order.at(_index));
-				}
+				int operator*() const;
 
 				/*
 				 * @brief Prefix increment operator, increments the iterator to the next element.
 				 * @return A reference to this iterator.
 				 * @throw std::runtime_error If the iterator is out of range.
 				*/
-				PrimeIterator &operator++() {
-					if (_index >= _container._elements_prime_order.size())
-					{
-						throw std::runtime_error("Iterator out of range");
-					}
-					
-					++_index;
-					return *this;
-				}
+				PrimeIterator &operator++();
 
 				/*
 				 * @brief Returns an iterator to the first element in the container.
@@ -864,66 +594,6 @@ namespace ariel
 				*/
 				PrimeIterator end() const {
 					return PrimeIterator(_container, _container._elements_prime_order.size());
-				}
-
-				/*
-				 * @brief Equality operator, checks if two iterators are equal by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if the iterators are equal, false otherwise.
-				 * @throw std::runtime_error If the iterators are from different containers.
-				*/
-				bool operator==(const PrimeIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index == other._index;
-				}
-
-				/*
-				 * @brief Inequality operator, checks if two iterators are not equal by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if the iterators are not equal, false otherwise.
-				 * @throw std::runtime_error If the iterators are from different containers.
-				*/
-				bool operator!=(const PrimeIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index != other._index;
-				}
-
-				/*
-				 * @brief Less than operator, checks if this iterator is less than the other iterator by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if this iterator is less than the other iterator, false otherwise.
-				 * @throw std::runtime_error If the iterators are from different containers.
-				*/
-				bool operator<(const PrimeIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index < other._index;
-				}
-
-				/*
-				 * @brief Greater than operator, checks if this iterator is greater than the other iterator by comparing their index.
-				 * @param other The iterator to compare to.
-				 * @return True if this iterator is greater than the other iterator, false otherwise.
-				 * @throw std::runtime_error If the iterators are from different containers.
-				*/
-				bool operator>(const PrimeIterator &other) const {
-					if (&_container != &other._container)
-					{
-						throw std::runtime_error("Cannot compare iterators from different containers");
-					}
-
-					return _index > other._index;
 				}
 		};
 	};
