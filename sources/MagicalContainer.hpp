@@ -45,20 +45,20 @@ namespace ariel
 			std::set<int> _elements;
 
 			/*
-			 * @brief The container's elements in ascending order.
-			 * @note The elements are stored in a vector to allow random access.
+			 * @brief The container's elements pointers in ascending order.
+			 * @note The elements are stored in a vector to allow random access and fast iteration.
 			*/
 			std::vector<const int *> _elements_ascending_order;
 
 			/*
-			 * @brief The container's elements in different order (sidecross).
-			 * @note The elements are stored in a vector to allow random access.
+			 * @brief The container's elements pointers in sidecross order.
+			 * @note The elements are stored in a vector to allow random access and fast iteration.
 			*/
 			std::vector<const int *> _elements_sidecross_order;
 
 			/*
-			 * @brief The container's elements in different orders, prime numbers only.
-			 * @note The elements are stored in a vector to allow random access.
+			 * @brief The container's elements pointers in ascending order, with prime numbers only.
+			 * @note The elements are stored in a vector to allow random access and fast iteration.
 			*/
 			std::vector<const int *> _elements_prime_order;
 
@@ -66,6 +66,7 @@ namespace ariel
 			 * @brief Checks if a given number is prime.
 			 * @param num The number to check.
 			 * @return True if the number is prime, false otherwise.
+			 * @note We assume that the number is positive, any negative number will return false.
 			*/
 			static bool _isPrime(int num);
 
@@ -74,7 +75,7 @@ namespace ariel
 			 * @brief Construct a new Magical Container object.
 			 * @note The container is empty by default.
 			*/
-			MagicalContainer() { }
+			MagicalContainer() = default;
 
 			/*
 			 * @brief Add an element to the container.
@@ -112,7 +113,7 @@ namespace ariel
 				 * @brief The container to iterate over.
 				 * @note This is a reference to the container, so it must not be destroyed while the iterator is in use.
 				*/
-				MagicalContainer& _container;
+				const MagicalContainer *_container;
 
 				/*
 				 * @brief The current index of the iterator.
@@ -126,15 +127,21 @@ namespace ariel
 				 * @param index The index to start iterating from.
 				 * @note The iterator is initialized to the element at the given index in the container.
 				*/
-				AscendingIterator(MagicalContainer &container, size_t index);
+				AscendingIterator(const MagicalContainer *container, size_t index): _container(container), _index(index) { }
 
 			public:
+				/*
+				 * @brief Construct a new Ascending Iterator object, uninitialized (points to no container).
+				 * @note This iterator is not dereferenceable, and must be assigned to a valid iterator before use.
+				*/
+				AscendingIterator(): _container(nullptr), _index(0) { }
+
 				/*
 				 * @brief Construct a new Ascending Iterator object.
 				 * @param container The container to iterate over.
 				 * @note The iterator is initialized to the first element in the container.
 				*/
-				AscendingIterator(MagicalContainer &container);
+				AscendingIterator(const MagicalContainer &container): AscendingIterator(&container, 0) { }
 
 				/*
 				 * @brief Destroy the Ascending Iterator object.
@@ -235,7 +242,8 @@ namespace ariel
 
 				/*
 				 * @brief Dereference operator, returns the element at the current index.
-				 * @return The element at the current index (If the index is out of bounds, the behavior is undefined).
+				 * @return The element at the current index.
+				 * @throw std::runtime_error If the iterator is out of range.
 				*/
 				int operator*() const;
 
@@ -261,7 +269,7 @@ namespace ariel
 				 * @note This iterator is not dereferenceable.
 				*/
 				AscendingIterator end() const {
-					return AscendingIterator(_container, _container._elements_ascending_order.size());
+					return AscendingIterator(_container, _container->_elements_ascending_order.size());
 				}
 		};
 
@@ -275,7 +283,7 @@ namespace ariel
 				 * @brief The container to iterate over.
 				 * @note This is a reference to the container, so it must not be destroyed while the iterator is in use.
 				*/
-				MagicalContainer& _container;
+				const MagicalContainer *_container;
 
 				/*
 				 * @brief The current index of the iterator.
@@ -289,15 +297,21 @@ namespace ariel
 				 * @param index The index to initialize the iterator to.
 				 * @note The iterator is initialized to the given index.
 				*/
-				SideCrossIterator(MagicalContainer &container, size_t index);
+				SideCrossIterator(const MagicalContainer *container, size_t index): _container(container), _index(index) {}
 
 			public:
+				/*
+				 * @brief Construct a new Side Cross Iterator object, uninitialized (points to no container).
+				 * @note This iterator is not dereferenceable, and must be assigned to a valid iterator before use.
+				*/
+				SideCrossIterator(): _container(nullptr), _index(0) {}
+
 				/*
 				 * @brief Construct a new Side Cross Iterator object.
 				 * @param cont The container to iterate over.
 				 * @note The iterator is initialized to the first element in the container.
 				*/
-				SideCrossIterator(MagicalContainer &container);
+				SideCrossIterator(const MagicalContainer &container): _container(&container), _index(0) {}
 
 				/*
 				 * @brief Destroy the Side Cross Iterator object.
@@ -401,7 +415,8 @@ namespace ariel
 
 				/*
 				 * @brief Dereference operator, returns the element at the current index.
-				 * @return The element at the current index (If the index is out of bounds, the behavior is undefined).
+				 * @return The element at the current index.
+				 * @throw std::runtime_error If the iterator is out of range.
 				*/
 				int operator*() const;
 
@@ -427,7 +442,7 @@ namespace ariel
 				 * @note This iterator is not dereferenceable.
 				*/
 				SideCrossIterator end() const {
-					return SideCrossIterator(_container, _container._elements_sidecross_order.size());
+					return SideCrossIterator(_container, _container->_elements_sidecross_order.size());
 				}
 		};
 
@@ -441,7 +456,7 @@ namespace ariel
 				 * @brief The container to iterate over.
 				 * @note This is a reference to the container, so it must not be destroyed while the iterator is in use.
 				*/
-				MagicalContainer& _container;
+				const MagicalContainer *_container;
 
 				/*
 				 * @brief The current index of the iterator.
@@ -455,15 +470,22 @@ namespace ariel
 				 * @param index The index to initialize the iterator to.
 				 * @note The iterator is initialized to the given index.
 				*/
-				PrimeIterator(MagicalContainer &container, size_t index);
+				PrimeIterator(const MagicalContainer *container, size_t index): _container(container), _index(index) {}
 
 			public:
+
+				/*
+				 * @brief Construct a new Prime Iterator object, uninitialized (points to no container).
+				 * @note This iterator is not dereferenceable, and must be assigned to a valid iterator before use.
+				*/
+				PrimeIterator(): _container(nullptr), _index(0) {}
+
 				/*
 				 * @brief Construct a new Prime Iterator object.
 				 * @param container The container to iterate over.
 				 * @note The iterator is initialized to the first element in the container.
 				*/
-				PrimeIterator(MagicalContainer &container);
+				PrimeIterator(const MagicalContainer &container): _container(&container), _index(0) {}
 
 				/*
 				 * @brief Destroy the Prime Iterator object.
@@ -567,7 +589,8 @@ namespace ariel
 
 				/*
 				 * @brief Dereference operator, returns the element at the current index.
-				 * @return The element at the current index (If the index is out of bounds, the behavior is undefined).
+				 * @return The element at the current index.
+				 * @throw std::runtime_error If the iterator is out of range.
 				*/
 				int operator*() const;
 
@@ -593,7 +616,7 @@ namespace ariel
 				 * @note This iterator is not dereferenceable.
 				*/
 				PrimeIterator end() const {
-					return PrimeIterator(_container, _container._elements_prime_order.size());
+					return PrimeIterator(_container, _container->_elements_prime_order.size());
 				}
 		};
 	};

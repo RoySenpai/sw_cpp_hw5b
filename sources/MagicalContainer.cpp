@@ -16,6 +16,7 @@
  */
 
 #include <cstdlib>
+#include <cmath>
 #include <memory>
 #include <algorithm>
 #include "MagicalContainer.hpp"
@@ -28,41 +29,33 @@ void MagicalContainer::addElement(int element) {
 
 	if (in.second)
 	{
-		const int *address = &(*in.first);
-
-		_elements_ascending_order.clear();
-		_elements_sidecross_order.clear();
-
-		_elements_ascending_order.reserve(_elements.size());
-		_elements_sidecross_order.reserve(_elements.size());
-
-		// Time complexity is O(n) in this case.
+		// Handle prime order - O(n) in this case, as we need to find the correct place to insert the element.
 		if (_isPrime(element))
 		{
-			_elements_prime_order.clear();
-			_elements_prime_order.reserve(_elements.size());
+			auto index_to_insert = lower_bound(_elements_prime_order.begin(), _elements_prime_order.end(), &(*in.first), [](const int *a, const int *b) {
+				return *a < *b;
+			});
 
-			for (const int &element : _elements)
-			{
-				if (_isPrime(element))
-					_elements_prime_order.push_back(&element);
-			}
+			_elements_prime_order.insert(index_to_insert, &(*in.first));
 		}
 
-		// Reorder ascending order by clearing and inserting all elements again. Time complexity is O(n),
-		// as opposed to O(nlogn) if we were to sort the vector.
-		for (const int &element : _elements)
-			_elements_ascending_order.push_back(&element);
+		// Handle ascending order - O(n) in this case, as we need to find the correct place to insert the element.
+		auto index_to_insert = lower_bound(_elements_ascending_order.begin(), _elements_ascending_order.end(), &(*in.first), [](const int *a, const int *b) {
+			return *a < *b;
+		});
 
-		size_t start = 0, end = size() - 1;
+		_elements_ascending_order.insert(index_to_insert, &(*in.first));
 
-		// Time complexity is O(1) in this case.
+		// Handle sidecross order - O(n) in this case, as we need to rebuild the vector (Easier than reordering it).
+		_elements_sidecross_order.clear();
+
 		if (size() == 1)
-			_elements_sidecross_order.push_back(_elements_ascending_order.at(0));
+			_elements_sidecross_order.push_back(_elements_ascending_order.front());
 
-		// Time complexity is O(n) in this case.
 		else
 		{
+			size_t start = 0, end = size() - 1;
+
 			while (start <= end && end != 0)
 			{
 				_elements_sidecross_order.push_back(_elements_ascending_order.at(start));
@@ -83,30 +76,36 @@ void MagicalContainer::removeElement(int element) {
 	if (it == _elements.end())
 		throw runtime_error("Element not found");
 
-	_elements.erase(element);
-
-	// Handle prime order
+	// Handle prime order - O(n) in this case, as we need to find the element in the vector to remove it.
 	if (_isPrime(element))
 	{
 		auto it_prime = find(_elements_prime_order.begin(), _elements_prime_order.end(), &(*it));
 		_elements_prime_order.erase(it_prime);
 	}
 
-	// Handle ascending order
+	// Handle ascending order - O(n) in this case, as we need to find the element in the vector to remove it.
 	auto it_ascending = find(_elements_ascending_order.begin(), _elements_ascending_order.end(), &(*it));
 	_elements_ascending_order.erase(it_ascending);
 
-	// Handle sidecross order
-	_elements_sidecross_order.clear();
-	_elements_sidecross_order.reserve(_elements.size());
+	// Delete the element - O(logn)
+	_elements.erase(element);
 
-	size_t start = 0, end = size() - 1;
+	// Handle sidecross order - O(n) in this case, as we need to rebuild the vector (Easier than reordering it).
+	_elements_sidecross_order.clear();
+
+	// Incase the main container is empty, we don't need to rebuild the vector.
+	if (size() == 0)
+		return;
+
+	_elements_sidecross_order.reserve(_elements.size());
 
 	if (size() == 1)
 		_elements_sidecross_order.push_back(_elements_ascending_order.at(0));
 
 	else
 	{
+		size_t start = 0, end = size() - 1;
+
 		while (start <= end && end != 0)
 		{
 			_elements_sidecross_order.push_back(_elements_ascending_order.at(start));
@@ -121,10 +120,10 @@ void MagicalContainer::removeElement(int element) {
 }
 
 bool MagicalContainer::_isPrime(int num) {
-	if (abs(num) <= 1)
+	if (num <= 1)
 		return false;
 
-	for (int i = 2; i < num; ++i)
+	for (int i = 2; i <= sqrt(num); ++i)
 	{
 		if (num % i == 0)
 			return false;
@@ -133,23 +132,26 @@ bool MagicalContainer::_isPrime(int num) {
 	return true;
 }
 
-MagicalContainer::AscendingIterator::AscendingIterator(MagicalContainer &container) : _container(container), _index(0) {}
+MagicalContainer::AscendingIterator::AscendingIterator(const AscendingIterator &other) {
+	if (_container != other._container && _container != nullptr && other._container != nullptr)
+		throw runtime_error("Cannot copy iterators from different containers");
 
-MagicalContainer::AscendingIterator::AscendingIterator(MagicalContainer &container, size_t index) : _container(container), _index(index) {}
-
-MagicalContainer::AscendingIterator::AscendingIterator(const AscendingIterator &other) : _container(other._container), _index(other._index) {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot copy iterators from different containers");
+	_container = other._container;
+	_index = other._index;
 }
 
-MagicalContainer::AscendingIterator::AscendingIterator(AscendingIterator &&other) noexcept: _container(other._container), _index(other._index) {}
+MagicalContainer::AscendingIterator::AscendingIterator(AscendingIterator &&other) noexcept: _container(other._container), _index(other._index) {
+	other._container = nullptr;
+	other._index = 0;
+}
 
 MagicalContainer::AscendingIterator &MagicalContainer::AscendingIterator::operator=(const AscendingIterator &other) {
 	if (this != &other)
 	{
-		if (&_container != &other._container)
-			throw std::runtime_error("Cannot assign iterators from different containers");
+		if (&_container != &other._container && _container != nullptr && other._container != nullptr)
+			throw runtime_error("Cannot assign iterators from different containers");
 
+		_container = other._container;
 		_index = other._index;
 	}
 
@@ -161,6 +163,9 @@ MagicalContainer::AscendingIterator &MagicalContainer::AscendingIterator::operat
 	{
 		_container = other._container;
 		_index = other._index;
+
+		other._container = nullptr;
+		other._index = 0;
 	}
 
 	return *this;
@@ -170,10 +175,13 @@ bool MagicalContainer::AscendingIterator::operator==(const IIterator &other) con
 	const AscendingIterator *other_ptr = dynamic_cast<const AscendingIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	else if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index == other_ptr->_index;
 }
@@ -182,10 +190,13 @@ bool MagicalContainer::AscendingIterator::operator!=(const IIterator &other) con
 	const AscendingIterator *other_ptr = dynamic_cast<const AscendingIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index != other_ptr->_index;
 }
@@ -194,10 +205,13 @@ bool MagicalContainer::AscendingIterator::operator<(const IIterator &other) cons
 	const AscendingIterator *other_ptr = dynamic_cast<const AscendingIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index < other_ptr->_index;
 }
@@ -206,73 +220,96 @@ bool MagicalContainer::AscendingIterator::operator>(const IIterator &other) cons
 	const AscendingIterator *other_ptr = dynamic_cast<const AscendingIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index > other_ptr->_index;
 }
 
 bool MagicalContainer::AscendingIterator::operator==(const AscendingIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index == other._index;
 }
 
 bool MagicalContainer::AscendingIterator::operator!=(const AscendingIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index != other._index;
 }
 
 bool MagicalContainer::AscendingIterator::operator<(const AscendingIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index < other._index;
 }
 
 bool MagicalContainer::AscendingIterator::operator>(const AscendingIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index > other._index;
 }
 
 int MagicalContainer::AscendingIterator::operator*() const {
-	if (_index >= _container._elements_ascending_order.size())
-		throw std::out_of_range("Iterator out of range");
+	if (_container == nullptr)
+		throw runtime_error("Iterator not initialized");
 
-	return *(_container._elements_ascending_order.at(_index));
+	else if (_index >= _container->_elements_ascending_order.size())
+		throw runtime_error("Iterator out of range");
+
+	return *(_container->_elements_ascending_order.at(_index));
 }
 
 MagicalContainer::AscendingIterator &MagicalContainer::AscendingIterator::operator++() {
-	if (_index >= _container._elements_ascending_order.size())
-		throw std::runtime_error("Iterator out of range");
+	if (_container == nullptr)
+		throw runtime_error("Iterator not initialized");
+
+	else if (_index >= _container->_elements_ascending_order.size())
+		throw runtime_error("Iterator out of range");
 
 	++_index;
 	return *this;
 }
 
-MagicalContainer::SideCrossIterator::SideCrossIterator(MagicalContainer &container) : _container(container), _index(0) {}
+MagicalContainer::SideCrossIterator::SideCrossIterator(const SideCrossIterator &other) {
+	if (_container != other._container && _container != nullptr && other._container != nullptr)
+		throw runtime_error("Cannot copy iterators from different containers");
 
-MagicalContainer::SideCrossIterator::SideCrossIterator(MagicalContainer &container, size_t index) : _container(container), _index(index) {}
-
-MagicalContainer::SideCrossIterator::SideCrossIterator(const SideCrossIterator &other) : _container(other._container), _index(other._index) {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot copy iterators from different containers");
+	_container = other._container;
+	_index = other._index;
 }
 
-MagicalContainer::SideCrossIterator::SideCrossIterator(SideCrossIterator &&other) noexcept: _container(other._container), _index(other._index) {}
+MagicalContainer::SideCrossIterator::SideCrossIterator(SideCrossIterator &&other) noexcept: _container(other._container), _index(other._index) {
+	other._container = nullptr;
+	other._index = 0;
+}
 
 MagicalContainer::SideCrossIterator &MagicalContainer::SideCrossIterator::operator=(const SideCrossIterator &other) {
 	if (this != &other)
 	{
 		if (&_container != &other._container)
-			throw std::runtime_error("Cannot assign iterators from different containers");
+			throw runtime_error("Cannot assign iterators from different containers");
 		
 		_index = other._index;
 	}
@@ -294,10 +331,13 @@ bool MagicalContainer::SideCrossIterator::operator==(const IIterator &other) con
 	const SideCrossIterator *other_ptr = dynamic_cast<const SideCrossIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index == other_ptr->_index;
 }
@@ -306,10 +346,13 @@ bool MagicalContainer::SideCrossIterator::operator!=(const IIterator &other) con
 	const SideCrossIterator *other_ptr = dynamic_cast<const SideCrossIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index != other_ptr->_index;
 }
@@ -318,10 +361,13 @@ bool MagicalContainer::SideCrossIterator::operator<(const IIterator &other) cons
 	const SideCrossIterator *other_ptr = dynamic_cast<const SideCrossIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index < other_ptr->_index;
 }
@@ -330,76 +376,100 @@ bool MagicalContainer::SideCrossIterator::operator>(const IIterator &other) cons
 	const SideCrossIterator *other_ptr = dynamic_cast<const SideCrossIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index > other_ptr->_index;
 }
 
 bool MagicalContainer::SideCrossIterator::operator==(const SideCrossIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index == other._index;
 }
 
 bool MagicalContainer::SideCrossIterator::operator!=(const SideCrossIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index != other._index;
 }
 
 bool MagicalContainer::SideCrossIterator::operator<(const SideCrossIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index < other._index;
 }
 
 bool MagicalContainer::SideCrossIterator::operator>(const SideCrossIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index > other._index;
 }
 
 int MagicalContainer::SideCrossIterator::operator*() const {
-	if (_index >= _container._elements_ascending_order.size())
-		throw std::out_of_range("Iterator out of range");
+	if (_container == nullptr)
+		throw runtime_error("Iterator not initialized");
 
-	return *(_container._elements_sidecross_order.at(_index));
+	else if (_index >= _container->_elements_ascending_order.size())
+		throw runtime_error("Iterator out of range");
+
+	return *(_container->_elements_sidecross_order.at(_index));
 }
 
 MagicalContainer::SideCrossIterator &MagicalContainer::SideCrossIterator::operator++() {
-	if (_index >= _container._elements_sidecross_order.size())
-		throw std::runtime_error("Iterator out of range");
+	if (_container == nullptr)
+		throw runtime_error("Iterator not initialized");
+
+	else if (_index >= _container->_elements_sidecross_order.size())
+		throw runtime_error("Iterator out of range");
 
 	++_index;
 	return *this;
 }
 
-MagicalContainer::PrimeIterator::PrimeIterator(MagicalContainer &container) : _container(container), _index(0) {}
+MagicalContainer::PrimeIterator::PrimeIterator(const PrimeIterator &other) {
+	if (_container != other._container && _container != nullptr && other._container != nullptr)
+		throw runtime_error("Cannot copy iterators from different containers");
 
-MagicalContainer::PrimeIterator::PrimeIterator(MagicalContainer &container, size_t index) : _container(container), _index(index) {}
-
-MagicalContainer::PrimeIterator::PrimeIterator(const PrimeIterator &other) : _container(other._container), _index(other._index) {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot copy iterators from different containers");
+	_container = other._container;
+	_index = other._index;
 }
 
-MagicalContainer::PrimeIterator::PrimeIterator(PrimeIterator &&other) noexcept: _container(other._container), _index(other._index) {}
+MagicalContainer::PrimeIterator::PrimeIterator(PrimeIterator &&other) noexcept: _container(other._container), _index(other._index) {
+	other._container = nullptr;
+	other._index = 0;
+}
 
 MagicalContainer::PrimeIterator &MagicalContainer::PrimeIterator::operator=(const PrimeIterator &other) {
 	if (this != &other)
 	{
-		if (&_container != &other._container)
+		if (_container != other._container && _container != nullptr && other._container != nullptr)
 		{
-			throw std::runtime_error("Cannot assign iterators from different containers");
+			throw runtime_error("Cannot assign iterators from different containers");
 		}
 
+		_container = other._container;
 		_index = other._index;
 	}
 
@@ -411,6 +481,9 @@ MagicalContainer::PrimeIterator &MagicalContainer::PrimeIterator::operator=(Prim
 	{
 		_container = other._container;
 		_index = other._index;
+
+		other._container = nullptr;
+		other._index = 0;
 	}
 
 	return *this;
@@ -420,10 +493,13 @@ bool MagicalContainer::PrimeIterator::operator==(const IIterator &other) const {
 	const PrimeIterator *other_ptr = dynamic_cast<const PrimeIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index == other_ptr->_index;
 }
@@ -432,10 +508,13 @@ bool MagicalContainer::PrimeIterator::operator!=(const IIterator &other) const {
 	const PrimeIterator *other_ptr = dynamic_cast<const PrimeIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index != other_ptr->_index;
 }
@@ -444,10 +523,13 @@ bool MagicalContainer::PrimeIterator::operator<(const IIterator &other) const {
 	const PrimeIterator *other_ptr = dynamic_cast<const PrimeIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index < other_ptr->_index;
 }
@@ -456,52 +538,73 @@ bool MagicalContainer::PrimeIterator::operator>(const IIterator &other) const {
 	const PrimeIterator *other_ptr = dynamic_cast<const PrimeIterator *>(&other);
 
 	if (other_ptr == nullptr)
-		throw std::runtime_error("Cannot compare iterators of different types");
+		throw runtime_error("Cannot compare iterators of different types");
 
-	if (&_container != &other_ptr->_container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	else if (_container == nullptr || other_ptr->_container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other_ptr->_container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index > other_ptr->_index;
 }
 
 bool MagicalContainer::PrimeIterator::operator==(const PrimeIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr)
+		throw runtime_error("Iterator not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index == other._index;
 }
 
 bool MagicalContainer::PrimeIterator::operator!=(const PrimeIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index != other._index;
 }
 
 bool MagicalContainer::PrimeIterator::operator<(const PrimeIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index < other._index;
 }
 
 bool MagicalContainer::PrimeIterator::operator>(const PrimeIterator &other) const {
-	if (&_container != &other._container)
-		throw std::runtime_error("Cannot compare iterators from different containers");
+	if (_container == nullptr || other._container == nullptr)
+		throw runtime_error("One of the iterators is not initialized");
+
+	else if (_container != other._container)
+		throw runtime_error("Cannot compare iterators from different containers");
 
 	return _index > other._index;
 }
 
 int MagicalContainer::PrimeIterator::operator*() const {
-	if (_index >= _container._elements_ascending_order.size())
-		throw std::out_of_range("Iterator out of range");
+	if (_container == nullptr)
+		throw runtime_error("Iterator not initialized");
 
-	return *(_container._elements_prime_order.at(_index));
+	else if (_index >= _container->_elements_ascending_order.size())
+		throw runtime_error("Iterator out of range");
+
+	return *(_container->_elements_prime_order.at(_index));
 }
 
 MagicalContainer::PrimeIterator &MagicalContainer::PrimeIterator::operator++() {
-	if (_index >= _container._elements_prime_order.size())
-		throw std::runtime_error("Iterator out of range");
+	if (_container == nullptr)
+		throw runtime_error("Iterator not initialized");
+
+	else if (_index >= _container->_elements_prime_order.size())
+		throw runtime_error("Iterator out of range");
 
 	++_index;
 	return *this;
